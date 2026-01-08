@@ -11,6 +11,7 @@ const placeOrder = async (req, res) => {
 
     const frontend_url = "http://localhost:5173"
 
+
     try {
         const newOrder = new orderModel({
             userId: req.body.userId,
@@ -19,7 +20,7 @@ const placeOrder = async (req, res) => {
             address: req.body.address
         })
         await newOrder.save();
-        await userModel.findByIdAndUpdate(req.body.userId,{cartData:{}});
+        await userModel.findByIdAndUpdate(req.body.userId, { cartData: {} });
 
         const line_items = req.body.items.map((item) => ({
             price_data: {
@@ -46,20 +47,39 @@ const placeOrder = async (req, res) => {
             line_items: line_items,
             mode: 'payment',
             success_url: `${frontend_url}/verify?success=true&orderId=${newOrder._id}`,
-            cancel_url: `${frontend_url}/verify?success=false&orderId=${newOrder._id}`,
+            cancel_url: `${frontend_url}/verify?success=false&orderId=${newOrder._id}`
 
         })
-        res.json({ success: true, session_url: session.url }) 
+        res.json({ success: true, session_url: session.url })
 
 
     } catch (error) {
         console.log(error);
-        res.json({success:false,message:"Error"})
-        
+        res.json({ success: false, message: "Error" })
+
     }
 }
+const verifyOrder = async (req, res) => {
+
+    const { orderId, success } = req.body;
+    try {
+        if (success === "true") {
+            await orderModel.findByIdAndUpdate(orderId, { payment: true });
+            res.json({success:true,message:"Paid"})
+        }
+        else{
+            await orderModel.findByIdAndDelete(orderId);
+            res.json({success:false,message:"Not Paid"})
+
+        }
+    } catch (error) {
+        console.log(error);
+        res.json({success:false,message:"Error"})
+    }
 
 
-export { placeOrder }
+}
+
+export { placeOrder, verifyOrder }
 
 
